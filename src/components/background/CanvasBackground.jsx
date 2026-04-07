@@ -204,12 +204,17 @@ export default function CanvasBackground({ stateRef }) {
       ctx.fillRect(0, height - edgeSize, width, edgeSize);
 
       // ---- BLOCK EQUALIZER (bottom) ----
+      // Bars now span ~half the viewport height so the equalizer reads at a
+      // glance. Block height/gap are derived from window height instead of
+      // hard-coded so they scale with the user's monitor.
       const barCount = SPECTRUM_BANDS;
       const blockW = Math.max(2, Math.floor((width - 20) / barCount) - 2);
       const blockGap = 2;
-      const blockH = 10;
-      const blockVGap = 3;
-      const maxBlocks = 20;
+      const maxBlocks = 24;
+      const targetTotalHeight = height * 0.5; // bars reach half the viewport
+      const cellH = Math.max(10, Math.floor(targetTotalHeight / maxBlocks));
+      const blockVGap = Math.max(2, Math.floor(cellH * 0.25));
+      const blockH = cellH - blockVGap;
       const eqStartX = 10;
       const eqBottomY = height - 15;
 

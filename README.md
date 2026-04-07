@@ -47,10 +47,12 @@ npm run dev
 
 - **5画面ステートマシン**: タイトル / 曲選択 / 難易度選択 / ゲーム / リザルト
 - **派手な遷移演出**: 難易度決定後、画面全体が2秒で白フェード → 「ピカーン」SE → ゲーム画面が現れて → 5秒のカウントダウン（GET READY → 3 → 2 → 1）→ プレイ開始
-- **リアルタイム音響解析**: AnalyserNode で40バンド対数集約、ブロック型イコライザー背景に反映
+- **リアルタイム音響解析**: AnalyserNode で40バンド対数集約、ブロック型イコライザー背景に反映（バーは画面高さの約半分まで伸びる）
 - **コンボ連動ディスコレベル**: 0〜4の5段階でディスコライト・レーザー・グリッドが進化
+- **メニューBGM**: タイトル/曲選択/難易度/リザルト画面で `public/bgm/menu.wav` をループ再生（ゲーム遷移時はクロスフェード）
 - **自動譜面生成**: librosa のビート/オンセット検出 + 周波数帯別エネルギー解析でレーン割り当て
 - **高速描画**: ノーツ可視範囲フィルタ + アクティブ区間カーソルで EXPERT 700ノーツでも安定
+- **曲終了演出**: 4.5秒の余韻中にランク評価（ALL PERFECT / AMAZING / EXCELLENT / GREAT / GOOD / ...）が大スラムイン
 - **設定の永続化**: ノーツ速度・判定オフセット・音量・AUTO PLAY を localStorage に保存
 
 ## 構成
@@ -67,7 +69,8 @@ neon-beat/
 ├── import/                  ← WAV投入フォルダ
 ├── public/
 │   ├── songs/              ← 生成された曲データ
-│   └── se/                 ← 効果音（任意・無ければOscillatorフォールバック）
+│   ├── se/                 ← 効果音（任意・無ければOscillatorフォールバック）
+│   └── bgm/menu.wav        ← メニュー画面のループBGM（任意）
 ├── src/
 │   ├── App.jsx             ← ステートマシン + 白フェード遷移
 │   ├── components/
@@ -75,7 +78,7 @@ neon-beat/
 │   │   ├── game/           ← GameScreen, IntroOverlay, Lane, Note, ...
 │   │   ├── hud/            ← Score, Combo, DiscoLevelIndicator
 │   │   └── ui/             ← Menu, SongSelect, Difficulty, Result, Settings, WhiteFade
-│   ├── engine/             ← AudioEngine, GameEngine, SoundEffects, ChartLoader, InputHandler
+│   ├── engine/             ← AudioEngine, GameEngine, SoundEffects, MenuBgmPlayer, ChartLoader, InputHandler
 │   ├── utils/              ← constants.js, helpers.js
 │   └── styles/global.css
 ├── tools/

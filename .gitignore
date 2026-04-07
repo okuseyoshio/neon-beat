@@ -24,6 +24,11 @@ public/songs/*/
 !public/songs/.gitkeep
 public/songs/song-list.json
 
+# Menu BGM audio file (user-supplied; may be copyrighted or large)
+public/bgm/*.wav
+public/bgm/*.ogg
+public/bgm/*.mp3
+
 # IDE
 .idea/
 .vscode/

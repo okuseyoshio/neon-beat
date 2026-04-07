@@ -24,6 +24,19 @@ npm run dev
 詳しい説明は [MANUAL.md](MANUAL.md) を参照。
 友人にゲームを配布したい場合は [SHARE.md](SHARE.md) を参照。
 
+## ワンクリック ランチャー (Windows)
+
+プロジェクト直下に置いてある bat ファイルで、よく使う操作を即実行できます:
+
+| バッチ | 用途 |
+|-------|------|
+| `PLAY.bat` | ビルド済み `neon-beat.exe` を即起動（最速、開発不要） |
+| `DEV.bat` | `npm run tauri:dev`（ホットリロード付き開発モード） |
+| `REBUILD.bat` | `npm run tauri:build`（リリース exe + インストーラ再生成） |
+| `IMPORT_SONGS.bat` | WAV を **ドラッグ&ドロップ** すると自動で `import/` にコピー → 譜面解析まで実行 |
+
+`IMPORT_SONGS.bat` は WAV ファイルを bat の上にドロップするだけで、ファイルコピー → librosa 解析 → `song-list.json` 更新までワンステップで完了します。ダブルクリックすると import フォルダを開いて手動配置にも対応します。
+
 ## 操作（PC）
 
 | キー | 動作 |

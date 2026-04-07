@@ -64,7 +64,12 @@ export default function ResultScreen({
           margin: '12px 0 6px',
         }}
       >
-        <FixedWidthNumber value={result.score} />
+        {/* Wider digit slots for the giant Orbitron 900 result score */}
+        <FixedWidthNumber
+          value={result.score}
+          digitWidth="0.92em"
+          commaWidth="0.36em"
+        />
       </div>
 
       <div
@@ -113,7 +118,7 @@ export default function ResultScreen({
 
 function Stat({ label, value, color }) {
   return (
-    <div style={{ textAlign: 'center', minWidth: 76 }}>
+    <div style={{ textAlign: 'center', minWidth: 96 }}>
       <div style={{ color, fontSize: 12, letterSpacing: '0.1em' }}>{label}</div>
       <div
         style={{
@@ -123,7 +128,8 @@ function Stat({ label, value, color }) {
           textShadow: `0 0 10px ${color}`,
         }}
       >
-        <FixedWidthNumber value={value} />
+        {/* Slightly wider slots so 4-digit counts (e.g. 3,354 PERFECT) breathe */}
+        <FixedWidthNumber value={value} digitWidth="0.84em" commaWidth="0.34em" />
       </div>
     </div>
   );

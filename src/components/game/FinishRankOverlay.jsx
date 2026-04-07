@@ -2,6 +2,19 @@ import { useEffect, useState } from 'react';
 import { accuracyPercent } from '../../utils/helpers.js';
 
 /**
+ * Picks a clamp() font size for the rank label based on its character count.
+ * Longer labels like "ALL PERFECT" / "EXCELLENT" / "TRY AGAIN" need a smaller
+ * vw factor so they don't overflow the viewport at 0.08em letter-spacing.
+ */
+function rankLabelFontSize(label) {
+  const n = (label || '').length;
+  if (n <= 5) return 'clamp(80px, 18vw, 220px)';   // GREAT / GOOD / NICE / OK
+  if (n <= 7) return 'clamp(70px, 14vw, 180px)';   // AMAZING
+  if (n <= 9) return 'clamp(60px, 11vw, 150px)';   // EXCELLENT / TRY AGAIN
+  return 'clamp(48px, 9vw, 120px)';                // ALL PERFECT / FULL COMBO
+}
+
+/**
  * Returns the rank label/color/subtitle for a given run.
  * Tiers are tuned so that EXPERT runs feel rewarding without being unreachable.
  */
@@ -79,11 +92,13 @@ export default function FinishRankOverlay({ result }) {
         background: `radial-gradient(ellipse at center, ${rank.color}25, rgba(0,0,0,0.55) 70%)`,
       }}
     >
-      {/* Rank label */}
+      {/* Rank label - shrinks for longer labels so "ALL PERFECT" fits the
+          viewport width without clipping. Short labels (e.g. "GREAT") still
+          slam in at the full chunky size. */}
       <div
         className="font-display"
         style={{
-          fontSize: 'clamp(80px, 18vw, 220px)',
+          fontSize: rankLabelFontSize(rank.label),
           fontWeight: 900,
           color: '#fff',
           textShadow: `0 0 24px ${rank.color}, 0 0 48px ${rank.color}, 0 0 96px ${rank.color}`,
@@ -94,6 +109,8 @@ export default function FinishRankOverlay({ result }) {
           lineHeight: 1,
           padding: '0 24px',
           textAlign: 'center',
+          whiteSpace: 'nowrap',
+          maxWidth: '94vw',
         }}
       >
         {rank.label}

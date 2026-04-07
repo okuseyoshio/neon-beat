@@ -27,6 +27,10 @@ import DiscoLevelIndicator from '../hud/DiscoLevelIndicator.jsx';
 
 const LANE_WIDTH = FIELD_WIDTH / LANES;
 const JUDGE_LINE_Y = FIELD_HEIGHT - JUDGE_LINE_OFFSET;
+// HUD bar (score / combo / level / song / pause) is wider than the play
+// field so the COMBO can sit dead-center without overlapping the right
+// cluster. The play field stays at FIELD_WIDTH for note layout reasons.
+const HUD_WIDTH = 880;
 
 let particleId = 0;
 function spawnParticles(x, y, color, count = PARTICLES_PER_HIT) {
@@ -385,12 +389,14 @@ export default function GameScreen({
     >
       {/* HUD top bar.
           Layout: SCORE (left) + right cluster, with COMBO absolutely centered
-          on the field width so it never shifts as the score grows. */}
+          on the HUD width so it never shifts as the score grows. The HUD is
+          intentionally wider than the play field so left/right blocks can
+          breathe and never overlap the centered COMBO. */}
       <div
         style={{
           position: 'relative',
-          width: FIELD_WIDTH,
-          maxWidth: '92vw',
+          width: HUD_WIDTH,
+          maxWidth: '96vw',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -443,7 +449,7 @@ export default function GameScreen({
         </div>
       </div>
 
-      <div style={{ width: FIELD_WIDTH, maxWidth: '92vw', marginBottom: 8 }}>
+      <div style={{ width: HUD_WIDTH, maxWidth: '96vw', marginBottom: 8 }}>
         <ProgressBar progress={progress} />
       </div>
 

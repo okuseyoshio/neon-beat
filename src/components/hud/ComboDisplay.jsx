@@ -2,11 +2,12 @@ import FixedWidthNumber from './FixedWidthNumber.jsx';
 
 export default function ComboDisplay({ combo }) {
   // Always reserve a fixed-width slot so the surrounding HUD doesn't shift
-  // when the digit count grows from 2 → 3 → 4.
+  // when the digit count grows from 2 → 3 → 4 digits. 160px easily fits a
+  // 4-digit Orbitron 900 number at 36px with FixedWidthNumber's 0.78em slots.
   return (
     <div
       style={{
-        width: 120,
+        width: 160,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',

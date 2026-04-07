@@ -6,14 +6,19 @@
  * tabular-nums` is silently ignored when the font has no such feature.
  *
  * Slot widths are expressed in em so they scale with the parent fontSize.
- * Tuned for Orbitron 700:
- *   - digit slot: 0.62em (the widest digits "0/8" sit comfortably)
- *   - comma:      0.28em (commas are narrow)
+ * Defaults are tuned for Orbitron 700 at HUD sizes; for the huge result-screen
+ * score (Orbitron 900 at 144px) widen via the `digitWidth` / `commaWidth`
+ * props because Orbitron's bold digits get noticeably more chunky as size grows.
  *
  * Usage:
  *   <FixedWidthNumber value={1234567} />
+ *   <FixedWidthNumber value={result.score} digitWidth="0.92em" commaWidth="0.36em" />
  */
-export default function FixedWidthNumber({ value }) {
+export default function FixedWidthNumber({
+  value,
+  digitWidth = '0.78em',
+  commaWidth = '0.32em',
+}) {
   const str = value.toLocaleString();
   return (
     <span style={{ display: 'inline-flex', whiteSpace: 'nowrap' }}>
@@ -24,7 +29,7 @@ export default function FixedWidthNumber({ value }) {
             key={i}
             style={{
               display: 'inline-block',
-              width: isComma ? '0.28em' : '0.62em',
+              width: isComma ? commaWidth : digitWidth,
               textAlign: 'center',
             }}
           >

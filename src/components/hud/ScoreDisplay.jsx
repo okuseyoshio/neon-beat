@@ -2,12 +2,12 @@ import FixedWidthNumber from './FixedWidthNumber.jsx';
 
 export default function ScoreDisplay({ score }) {
   // Fixed width so the surrounding HUD doesn't shift as the score grows
-  // from 3 → 9 digits. 220px easily fits 9-digit Orbitron at 28px with the
-  // FixedWidthNumber slot system.
+  // from 3 → 9 digits. 260px fits 9-digit Orbitron 700 at 28px using the
+  // 0.78em digit slots from FixedWidthNumber.
   return (
     <div
       style={{
-        width: 220,
+        width: 260,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'flex-start',

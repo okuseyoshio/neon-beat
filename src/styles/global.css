@@ -1,0 +1,130 @@
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #06060f;
+  color: #f5f5ff;
+  font-family: 'Rajdhani', 'Hiragino Sans', 'Yu Gothic', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  outline: none;
+}
+
+input[type='range'] {
+  width: 100%;
+}
+
+.app-root {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Scanlines overlay (CSS only, above background canvas, below UI) */
+.scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.025) 0px,
+    rgba(255, 255, 255, 0.025) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  mix-blend-mode: overlay;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.font-display {
+  font-family: 'Orbitron', 'Rajdhani', sans-serif;
+  letter-spacing: 0.05em;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.neon-button {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  padding: 14px 36px;
+  border: 2px solid currentColor;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  color: #00e5ff;
+  text-transform: uppercase;
+  font-size: 18px;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  box-shadow: 0 0 12px currentColor, inset 0 0 12px rgba(0, 229, 255, 0.2);
+  text-shadow: 0 0 6px currentColor;
+}
+
+.neon-button:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 0 24px currentColor, inset 0 0 18px rgba(255, 255, 255, 0.15);
+}
+
+.neon-button:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.neon-card {
+  background: rgba(10, 10, 24, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 16px 20px;
+  backdrop-filter: blur(4px);
+}
+
+.neon-card.selected {
+  border-color: #00e5ff;
+  box-shadow: 0 0 24px rgba(0, 229, 255, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.15);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}

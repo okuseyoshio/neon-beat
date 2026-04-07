@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { DIFFICULTY_LABELS } from '../../utils/constants.js';
 import { accuracyPercent } from '../../utils/helpers.js';
+import FixedWidthNumber from '../hud/FixedWidthNumber.jsx';
 
 export default function ResultScreen({
   song,
@@ -61,11 +62,9 @@ export default function ResultScreen({
           color: '#fff',
           textShadow: '0 0 24px #00e5ff, 0 0 48px #ff2d95',
           margin: '12px 0 6px',
-          fontVariantNumeric: 'tabular-nums',
-          fontFeatureSettings: '"tnum" 1',
         }}
       >
-        {result.score.toLocaleString()}
+        <FixedWidthNumber value={result.score} />
       </div>
 
       <div
@@ -122,11 +121,9 @@ function Stat({ label, value, color }) {
           fontWeight: 700,
           color,
           textShadow: `0 0 10px ${color}`,
-          fontVariantNumeric: 'tabular-nums',
-          fontFeatureSettings: '"tnum" 1',
         }}
       >
-        {value}
+        <FixedWidthNumber value={value} />
       </div>
     </div>
   );

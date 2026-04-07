@@ -383,9 +383,12 @@ export default function GameScreen({
         paddingTop: 20,
       }}
     >
-      {/* HUD top bar */}
+      {/* HUD top bar.
+          Layout: SCORE (left) + right cluster, with COMBO absolutely centered
+          on the field width so it never shifts as the score grows. */}
       <div
         style={{
+          position: 'relative',
           width: FIELD_WIDTH,
           maxWidth: '92vw',
           display: 'flex',
@@ -395,7 +398,17 @@ export default function GameScreen({
         }}
       >
         <ScoreDisplay score={hudScore} />
-        <ComboDisplay combo={hudCombo} />
+        <div
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            pointerEvents: 'none',
+          }}
+        >
+          <ComboDisplay combo={hudCombo} />
+        </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <DiscoLevelIndicator level={discoLevel} />
           <div

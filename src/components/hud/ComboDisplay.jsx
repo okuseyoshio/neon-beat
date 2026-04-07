@@ -1,3 +1,5 @@
+import FixedWidthNumber from './FixedWidthNumber.jsx';
+
 export default function ComboDisplay({ combo }) {
   // Always reserve a fixed-width slot so the surrounding HUD doesn't shift
   // when the digit count grows from 2 → 3 → 4.
@@ -19,11 +21,9 @@ export default function ComboDisplay({ combo }) {
           color: '#ffe600',
           textShadow: '0 0 14px #ffe600, 0 0 28px #ff2d95',
           lineHeight: 1,
-          fontVariantNumeric: 'tabular-nums',
-          fontFeatureSettings: '"tnum" 1',
         }}
       >
-        {combo}
+        <FixedWidthNumber value={combo} />
       </div>
       <div
         style={{

@@ -22,6 +22,7 @@ npm run dev
 ```
 
 詳しい説明は [MANUAL.md](MANUAL.md) を参照。
+友人にゲームを配布したい場合は [SHARE.md](SHARE.md) を参照。
 
 ## 操作（PC）
 

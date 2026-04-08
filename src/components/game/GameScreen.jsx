@@ -453,12 +453,15 @@ export default function GameScreen({
     inputHandler.setShortcut('Escape', () => {
       setPaused((p) => !p);
     });
-    // A toggles AUTO PLAY mid-play
+    // A toggles AUTO PLAY — works during loading/intro/leadIn/playing alike.
+    // We mirror the engine state to React so the HUD badge updates even when
+    // the game loop isn't running yet (e.g. during the 3-2-1 countdown).
     inputHandler.setShortcut('KeyA', () => {
       const game = engineRef.current;
-      if (game) {
-        game.setAutoPlay(!game.autoPlay);
-      }
+      if (!game) return;
+      const next = !game.autoPlay;
+      game.setAutoPlay(next);
+      setHudAutoPlay(next);
     });
 
     return () => {

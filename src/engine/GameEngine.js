@@ -21,6 +21,10 @@ export class GameEngine {
     this.lastJudgment = null; // { type, lane, time }
     this.judgeOffsetSec = 0;
     this.autoPlay = false;
+    // Sticky flag: true if AUTO was ever enabled during this round.
+    // Used to disqualify the run from leaderboard saving even if the player
+    // toggled AUTO off again before finishing.
+    this.autoUsedThisRound = false;
     this.finished = false;
     this.onJudgment = null; // (judgment, lane) => void
     this.onComboMilestone = null; // (combo) => void
@@ -59,10 +63,12 @@ export class GameEngine {
     this.finished = false;
     this.judgeOffsetSec = (options.judgeOffsetMs || 0) / 1000;
     this.autoPlay = !!options.autoPlay;
+    this.autoUsedThisRound = this.autoPlay;
   }
 
   setAutoPlay(v) {
     this.autoPlay = v;
+    if (v) this.autoUsedThisRound = true;
   }
 
   setJudgeOffset(ms) {
@@ -191,6 +197,7 @@ export class GameEngine {
       misses: this.misses,
       totalNotes: this.totalNotes,
       autoPlay: this.autoPlay,
+      autoUsedThisRound: this.autoUsedThisRound,
     };
   }
 }

@@ -166,14 +166,19 @@ export default function App() {
   };
 
   const handleDifficultySelect = (diff) => {
+    // Ignore presses while a fade-out/fade-in is already underway —
+    // otherwise re-entering startGameTransition resets the pending GAME
+    // screen timer and the player can lock themselves out of the game.
+    if (transition.phase !== 'none') return;
     startGameTransition(diff);
   };
 
   useEffect(() => () => clearTransitionTimers(), []);
   const handleGameFinish = (result) => {
     if (selectedSong) {
-      // AUTO PLAY runs don't qualify for the leaderboard.
-      const scoreEntry = result.autoPlay
+      // AUTO PLAY runs don't qualify for the leaderboard. Even a brief toggle
+      // mid-play disqualifies the run (autoUsedThisRound is sticky).
+      const scoreEntry = result.autoUsedThisRound
         ? null
         : {
             score: result.score,

@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DIFFICULTY_COLORS, DIFFICULTY_LABELS } from '../../utils/constants.js';
+import { getSoundEffects } from '../../engine/SoundEffects.js';
 
 /**
  * IntroOverlay - flashy 5-second pre-game animation.
@@ -23,6 +24,31 @@ export default function IntroOverlay({ song, difficulty }) {
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
+  }, []);
+
+  // Countdown SE: schedule deterministic beeps at 2.0 / 3.0 / 4.0 seconds
+  // (when the digits "3", "2", "1" appear). Using setTimeout instead of an
+  // rAF check avoids any chance of skipping over the boundary frame.
+  useEffect(() => {
+    const se = getSoundEffects();
+    const timers = [];
+    const schedule = (delayMs, digit) => {
+      timers.push(
+        setTimeout(() => {
+          try {
+            se.playCountdown(digit);
+          } catch {
+            // ignore
+          }
+        }, delayMs)
+      );
+    };
+    schedule(2000, 3);
+    schedule(3000, 2);
+    schedule(4000, 1);
+    return () => {
+      for (const id of timers) clearTimeout(id);
+    };
   }, []);
 
   const diffColor = DIFFICULTY_COLORS[difficulty] || '#00e5ff';

@@ -73,9 +73,21 @@ export default function GameScreen({
   const laneFlashRef = useRef([0, 0, 0, 0]);
   const lastAutoSeRef = useRef(0); // throttle SE during AUTO play
   const gameFinishedAtRef = useRef(0); // wall-clock when game.finished detected (fallback)
+  // Lead-in: virtual seconds we scroll the field before audio actually starts,
+  // so the first note has time to fly in from the top of the field instead of
+  // appearing already near the judge line.
+  const leadInRef = useRef(0);
+  const leadInStartRef = useRef(0);
+  // Tracks the most recent crowd-ambience tier (0/1/2/3) so we only call
+  // updateCrowdAmbience() when the tier actually changes.
+  const ambienceTierRef = useRef(0);
+  // audioOffset is read every frame in the game loop. We mirror it into a ref
+  // so the loop sees live updates without restarting on each settings change.
+  const audioOffsetRef = useRef((settings.audioOffset || 0) / 1000);
 
   const [hudScore, setHudScore] = useState(0);
   const [hudCombo, setHudCombo] = useState(0);
+  const [hudAutoPlay, setHudAutoPlay] = useState(false);
   const [hudJudgment, setHudJudgment] = useState(null);
   const [hudParticles, setHudParticles] = useState([]);
   const [hudLaneFlash, setHudLaneFlash] = useState([false, false, false, false]);
@@ -116,6 +128,8 @@ export default function GameScreen({
 
     audio.setBgmVolume(settings.bgmVolume);
     audio.setSeVolume(settings.seVolume);
+    se.setGameSeEnabled(settings.gameSeEnabled !== false);
+    setHudAutoPlay(!!settings.autoPlay);
 
     (async () => {
       try {
@@ -130,6 +144,19 @@ export default function GameScreen({
           judgeOffsetMs: settings.judgeOffset,
           autoPlay: settings.autoPlay,
         });
+        // Compute lead-in: enough virtual time before audio.play() so the
+        // first note enters the field from the top edge rather than already
+        // sitting near the judge line at t=0.
+        const firstNoteTime = game.notes[0]?.time ?? 0;
+        const neededLead = JUDGE_LINE_Y / settings.noteSpeed;
+        leadInRef.current = Math.max(0, neededLead - firstNoteTime);
+        // Pre-shift the displayed time to -leadIn so notes are positioned
+        // off-screen above the field for the entire intro/countdown. Without
+        // this, the field would render the first note near the judge line
+        // during the countdown and then jump up the moment the lead-in begins.
+        if (leadInRef.current > 0) {
+          setCurrentTime(-leadInRef.current);
+        }
         game.onJudgment = (type, lane) => {
           // In AUTO mode we throttle SE so rapid bursts don't pile up audio nodes
           if (game.autoPlay) {
@@ -156,8 +183,20 @@ export default function GameScreen({
           }
           laneFlashRef.current[lane] = performance.now();
         };
-        game.onComboMilestone = () => {
+        game.onComboMilestone = (combo) => {
           se.playComboMilestone();
+          se.playCrowdCheer(combo);
+        };
+        // Disappointed groan when a sizeable combo breaks. Threshold of 25
+        // matches the first cheer milestone — small slip-ups stay silent.
+        game.onComboBreak = (lostCombo) => {
+          if (lostCombo >= 25) {
+            se.playCrowdGroan(lostCombo);
+          }
+        };
+        // Hostile boo when the player misses repeatedly in a row.
+        game.onMissStreak = (streak) => {
+          se.playCrowdBoo(streak);
         };
 
         // Don't start audio yet - move to intro phase first.
@@ -174,11 +213,14 @@ export default function GameScreen({
       cancelled = true;
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (audioRef.current) audioRef.current.stop();
+      if (seRef.current) seRef.current.stopCrowdAmbience();
+      ambienceTierRef.current = 0;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [song?.id, difficulty, retryToken]);
 
-  // Intro phase: hold for 5s with flashy overlay, then start audio + game loop.
+  // Intro phase: hold for 5s with flashy overlay, then either kick off the
+  // scroll lead-in (if needed) or start audio immediately.
   // Waits until introEnabled becomes true (parent fade-in finished).
   useEffect(() => {
     if (phase !== 'intro' || !introEnabled) return;
@@ -187,6 +229,14 @@ export default function GameScreen({
       if (cancelled) return;
       const audio = audioRef.current;
       if (!audio) return;
+      if (leadInRef.current > 0) {
+        // Begin virtual lead-in. The leadIn effect below will start audio
+        // when virtualTime reaches 0.
+        leadInStartRef.current = performance.now();
+        setCurrentTime(-leadInRef.current);
+        setPhase('leadIn');
+        return;
+      }
       try {
         await audio.play();
         if (cancelled) return;
@@ -202,6 +252,41 @@ export default function GameScreen({
     };
   }, [phase, introEnabled]);
 
+  // Lead-in phase: scroll the field with a virtual negative currentTime, then
+  // start audio precisely when virtualTime crosses 0.
+  useEffect(() => {
+    if (phase !== 'leadIn') return;
+    let cancelled = false;
+    let raf = 0;
+
+    const tick = async () => {
+      if (cancelled) return;
+      const elapsed = (performance.now() - leadInStartRef.current) / 1000;
+      const virtualTime = elapsed - leadInRef.current;
+      if (virtualTime >= 0) {
+        const audio = audioRef.current;
+        if (!audio) return;
+        try {
+          await audio.play();
+          if (cancelled) return;
+          startedRef.current = true;
+          setPhase('playing');
+        } catch (e) {
+          if (!cancelled) setError(e.message || 'Failed to start audio');
+        }
+        return;
+      }
+      setCurrentTime(virtualTime);
+      raf = requestAnimationFrame(tick);
+    };
+
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelled = true;
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [phase]);
+
   // React to settings volume changes mid-play
   useEffect(() => {
     if (audioRef.current) {
@@ -212,7 +297,19 @@ export default function GameScreen({
       engineRef.current.setJudgeOffset(settings.judgeOffset);
       engineRef.current.setAutoPlay(settings.autoPlay);
     }
-  }, [settings.bgmVolume, settings.seVolume, settings.judgeOffset, settings.autoPlay]);
+    if (seRef.current) {
+      seRef.current.setGameSeEnabled(settings.gameSeEnabled !== false);
+    }
+    audioOffsetRef.current = (settings.audioOffset || 0) / 1000;
+    setHudAutoPlay(!!settings.autoPlay);
+  }, [
+    settings.bgmVolume,
+    settings.seVolume,
+    settings.judgeOffset,
+    settings.autoPlay,
+    settings.gameSeEnabled,
+    settings.audioOffset,
+  ]);
 
   // Game loop - only runs once we're in 'playing' phase
   useEffect(() => {
@@ -274,6 +371,15 @@ export default function GameScreen({
         // HUD
         setHudScore(game.score);
         setHudCombo(game.combo);
+        setHudAutoPlay(game.autoPlay);
+
+        // Crowd ambience: tier 1 at 50, tier 2 at 100, tier 3 at 200.
+        const newTier =
+          game.combo >= 200 ? 3 : game.combo >= 100 ? 2 : game.combo >= 50 ? 1 : 0;
+        if (newTier !== ambienceTierRef.current) {
+          ambienceTierRef.current = newTier;
+          seRef.current?.updateCrowdAmbience(game.combo);
+        }
         if (game.lastJudgment && game.lastJudgment.time !== lastJudgmentTime) {
           lastJudgmentTime = game.lastJudgment.time;
           setHudJudgment({ type: game.lastJudgment.type, key: game.lastJudgment.time });
@@ -281,7 +387,9 @@ export default function GameScreen({
 
         // Time + progress (setCurrentTime alone re-renders the component
         // and updates note positions — no separate renderTick needed)
-        setCurrentTime(audioTime);
+        // audioOffset shifts the visual reference time WITHOUT affecting
+        // judgment (judgment uses raw audioTime + judgeOffset).
+        setCurrentTime(audioTime - audioOffsetRef.current);
         setProgress(audio.duration > 0 ? audioTime / audio.duration : 0);
 
         // Finish: wait until the audio has fully played out plus a silent
@@ -366,6 +474,11 @@ export default function GameScreen({
     if (!audio || !startedRef.current) return;
     if (paused) {
       audio.pause();
+      // Stop the looping crowd ambience while paused so it doesn't pile up
+      // queued whoops on the suspended AudioContext. The next tick after
+      // resume re-evaluates combo and restarts it if still high enough.
+      if (seRef.current) seRef.current.stopCrowdAmbience();
+      ambienceTierRef.current = 0;
     } else {
       audio.resume();
     }
@@ -416,6 +529,26 @@ export default function GameScreen({
           <ComboDisplay combo={hudCombo} />
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          {hudAutoPlay && (
+            <div
+              className="font-display"
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: '0.18em',
+                color: '#ffe600',
+                padding: '4px 10px',
+                border: '2px solid #ffe600',
+                borderRadius: 4,
+                background: '#ffe60018',
+                boxShadow: '0 0 12px #ffe60080',
+                animation: 'autoPulse 1.4s ease-in-out infinite',
+              }}
+              title="Auto play is ON (press A to toggle)"
+            >
+              AUTO
+            </div>
+          )}
           <DiscoLevelIndicator level={discoLevel} />
           <div
             style={{

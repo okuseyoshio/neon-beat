@@ -117,6 +117,33 @@ input[type='range'] {
   box-shadow: 0 0 24px rgba(0, 229, 255, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.15);
 }
 
+/* Hover-scroll marquee for long song titles. Only applied when the title
+   actually overflows; the inner span sets --marquee-shift / --marquee-duration
+   via inline style. The animation runs only while the surrounding card is
+   being hovered (or the song row is keyboard-selected). */
+@keyframes songTitleMarquee {
+  0%   { transform: translateX(0); }
+  10%  { transform: translateX(0); }
+  90%  { transform: translateX(var(--marquee-shift, 0)); }
+  100% { transform: translateX(var(--marquee-shift, 0)); }
+}
+
+.neon-card:hover .song-title-marquee > span,
+.neon-card.selected .song-title-marquee > span {
+  animation: songTitleMarquee var(--marquee-duration, 4s) linear infinite alternate;
+}
+
+@keyframes autoPulse {
+  0%, 100% {
+    box-shadow: 0 0 8px #ffe60080, inset 0 0 6px #ffe60040;
+    opacity: 0.85;
+  }
+  50% {
+    box-shadow: 0 0 18px #ffe600, inset 0 0 10px #ffe60080;
+    opacity: 1;
+  }
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { SCREENS, SPECTRUM_BANDS } from './utils/constants.js';
-import { loadSettings, saveSettings } from './utils/helpers.js';
+import {
+  loadSettings,
+  saveSettings,
+  recordSongPlay,
+  accuracyPercent,
+} from './utils/helpers.js';
 import { createInputHandler } from './engine/InputHandler.js';
 import { getSoundEffects } from './engine/SoundEffects.js';
 import { getMenuBgm } from './engine/MenuBgmPlayer.js';
@@ -166,6 +171,25 @@ export default function App() {
 
   useEffect(() => () => clearTransitionTimers(), []);
   const handleGameFinish = (result) => {
+    if (selectedSong) {
+      // AUTO PLAY runs don't qualify for the leaderboard.
+      const scoreEntry = result.autoPlay
+        ? null
+        : {
+            score: result.score,
+            difficulty: selectedDifficulty,
+            accuracy: accuracyPercent(
+              result.perfects,
+              result.greats,
+              result.goods,
+              result.totalNotes
+            ),
+            maxCombo: result.maxCombo,
+            autoPlay: false,
+            timestamp: Date.now(),
+          };
+      recordSongPlay(selectedSong.id, scoreEntry);
+    }
     setGameResult(result);
     setScreen(SCREENS.RESULT);
   };
@@ -205,6 +229,8 @@ export default function App() {
           onSelect={handleSongSelect}
           onBack={handleBackToTitle}
           onOpenSettings={() => setSettingsOpen(true)}
+          settings={settings}
+          onChangeSettings={setSettings}
         />
       )}
 

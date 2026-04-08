@@ -24,6 +24,9 @@ export class GameEngine {
     this.finished = false;
     this.onJudgment = null; // (judgment, lane) => void
     this.onComboMilestone = null; // (combo) => void
+    this.onComboBreak = null; // (lostCombo) => void — fires when a non-trivial combo breaks
+    this.onMissStreak = null; // (streakCount) => void — fires at miss-streak thresholds
+    this.missStreak = 0;
   }
 
   load(chart, difficulty, options = {}) {
@@ -51,6 +54,7 @@ export class GameEngine {
     this.greats = 0;
     this.goods = 0;
     this.misses = 0;
+    this.missStreak = 0;
     this.lastJudgment = null;
     this.finished = false;
     this.judgeOffsetSec = (options.judgeOffsetMs || 0) / 1000;
@@ -95,6 +99,7 @@ export class GameEngine {
           note.missed = true;
           note.judgment = 'miss';
           this.misses++;
+          const lostCombo = this.combo;
           this.combo = 0;
           this.lastJudgment = {
             type: 'miss',
@@ -102,6 +107,15 @@ export class GameEngine {
             time: performance.now(),
           };
           if (this.onJudgment) this.onJudgment('miss', note.lane);
+          if (lostCombo > 0 && this.onComboBreak) this.onComboBreak(lostCombo);
+          this.missStreak++;
+          // Fire boo at 5, then every additional 3 misses (5, 8, 11, ...)
+          if (
+            this.onMissStreak &&
+            (this.missStreak === 5 || (this.missStreak > 5 && (this.missStreak - 5) % 3 === 0))
+          ) {
+            this.onMissStreak(this.missStreak);
+          }
         }
       }
       i++;
@@ -154,6 +168,7 @@ export class GameEngine {
     const points = Math.round(j.score * (1 + this.combo * 0.1));
     this.score += points;
     this.combo += 1;
+    this.missStreak = 0;
     if (this.combo > this.maxCombo) this.maxCombo = this.combo;
     if (type === 'perfect') this.perfects++;
     else if (type === 'great') this.greats++;

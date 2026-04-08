@@ -1,13 +1,61 @@
 # NEON BEAT — 開発仕様書（完全版）
 
+**現在のバージョン: v1.1.0**（2026-04-08）
+
 ## プロジェクト概要
 
 **ゲーム名:** NEON BEAT  
 **フォルダ名:** `neon-beat`  
 **ジャンル:** 音楽リズムゲーム（4レーン落下型）  
-**プラットフォーム:** Webブラウザ（PC + モバイル対応）  
-**技術スタック:** Vite + React（フロントエンド）、Python（譜面生成ツール）  
+**プラットフォーム:** Webブラウザ + Tauri 2 Windows デスクトップ  
+**技術スタック:** Vite 8 + React 19（フロントエンド）、Python（譜面生成ツール）、Tauri 2（デスクトップ配布）  
 **初回実装で全機能を実装すること。Phase分割はしない。**
+
+---
+
+## 0. バージョン履歴
+
+### v1.1.0（2026-04-08）
+
+機能拡張リリース。プレイヤー体験 / カスタマイズ性 / 演出を大きく強化。
+
+**新機能 — UX**
+- **スクロール・リードイン**: ゲーム開始時、最初のノートが画面外上から流れ込むよう自動調整。`leadInSec = max(0, judgeLineY/noteSpeed - firstNoteTime)` ぶんだけ仮想負時間でフィールドをスクロールしてから音を再生。
+- **HUD AUTO バッジ**: AUTO PLAY 中は HUD 右上に黄色のパルスバッジを表示。ゲーム中の A キートグルにも追従。
+- **ゲーム中 SE オン/オフ**: 設定 `gameSeEnabled` を追加。OFF にすると判定SE / コンボSE / 歓声 / 落胆 / ブーイング / 連続歓声を一括ミュート。カウントダウンSEは別系統。
+
+**新機能 — 入力 / オーディオ補正**
+- **2種類のキャリブレーション** を設定画面に追加。
+  - **INPUT CALIBRATION**: 10本のバー（一定間隔）を順次落下させ、判定線でキー入力を取得。両端の外れ値を除外した中央値を `judgeOffset` の推奨値として表示。標準偏差 / ドット可視化 / RETRY も提供。
+  - **AUDIO SYNC**: 0.6秒間隔のメトロノーム（フラッシュ円 + クリック音）を流しつつ、スライダーで `audioOffset` を微調整。WebAudio の precise scheduling で音の発音を ±200ms の範囲で前後できる。矢印キー (1ms) / Shift+矢印 (10ms) / 画面上の `−10/−1/+1/+10` ボタンで微調整可能。
+- 新規設定 **`audioOffset`** (-200..+200 ms): ゲーム本番の**描画用 currentTime** を `audioTime - audioOffset/1000` にシフト。判定 (`audioTime + judgeOffsetSec`) には影響しないので、ハードウェア音遅延と人間反応速度を独立に補正できる。
+
+**新機能 — 曲選択 / リザルト**
+- **曲ソート**: 設定 `songSortMode` を追加。NEWEST / OLDEST / RECENT / MOST PLAYED / TITLE A→Z の5モード。Tab / Shift+Tab で循環。
+- **プレイ統計**: 完走時に `recordSongPlay(songId, scoreEntry)` を呼び、localStorage キー `'neonbeat.songstats.v1'` に `{ lastPlayed, playCount, scores[] }` を保存。
+- **ハイスコア記録**: 各曲ごとに最大10件のトップスコア（score / difficulty / accuracy / maxCombo / autoPlay / timestamp）を保持。AUTO PLAY のスコアは記録対象外。
+- **リザルト画面のランキング表示**: TOP5 + 自分の順位 + 1位更新時の `NEW HIGH!` バッジ。
+- **曲カードのハイスコア + 難易度グレード**: 各カードに `★ <topScore>` と C/B/A/S グレード（NPS+BPM 補正値の四分位ランクで判定）。曲が3曲以下の場合は固定NPS閾値にフォールバック。
+- **長い曲名のホバー / 選択時スクロール**: ResizeObserver で overflow を計測し、はみ出すタイトルだけ marquee アニメーションを CSS keyframes で発火。
+
+**新機能 — 演出 / SE**
+- **カウントダウンSE**: イントロの「3 / 2 / 1」digit ごとに同じピッチの「ピッ」音（square + sine + triangle 3層）を `setTimeout` で deterministic にスケジュール。
+- **オーディエンス歓声**:
+  - `playCrowdCheer(combo)` — コンボ 25/50/100/200/300/500 達成時に5段階で盛り上がる単発歓声。
+  - `updateCrowdAmbience(combo)` — コンボ50で開始する**連続歓声ループ**。tier1=50, tier2=100, tier3=200。50を切ると 0.4s フェードアウト。
+  - 構造: ピンクノイズループ → ローパス → 3層フォルマント (720/1180/2400 Hz) → マスタゲイン。F1 を 0.4Hz LFO で ±60Hz 揺らして「呼吸する群衆」感。
+  - whoop は三角波 + 二重フォルマントで「ahh」母音感を出す。
+- **落胆の「ああ…」**: `playCrowdGroan(lostCombo)` — コンボ25以上が途切れた瞬間に発火。下降ピッチスイープ + ローパスノイズで4段階。
+- **ブーイング**: `playCrowdBoo(missStreak)` — 5連続ミスで発火、以降3ミスごと。「oo」フォルマント (320Hz) + 低音ノコギリで4段階。
+
+**バグ修正**
+- **計測の純粋性**: キャリブレーション中は既存 `judgeOffset` を 0 として扱う。
+- **メトロノームのリーク修正**: AudioCalibrationModal クローズ時、すでに WebAudio に予約済みのオシレータを `osc.stop(0)` + `disconnect()` で強制停止する。lookahead を 12拍 → 6拍に縮小して安全マージンも追加。
+- **イントロでのバー位置ジャンプ修正**: チャートロード直後に `setCurrentTime(-leadInSec)` を呼ぶことで、カウントダウン中もノートが画面外上に隠れた状態を維持。
+
+**互換性**
+- 既存 `localStorage` キー (`neonbeat.settings.v2`) はそのまま使用。新規フィールドは欠損時にデフォルト値を返すので、v1.0.x からの自動移行可。
+- 新規 localStorage キー: `'neonbeat.songstats.v1'`。
 
 ---
 
@@ -129,15 +177,20 @@ neon-beat/
 
 ### 2.7 設定項目
 
-| 項目 | デフォルト | 範囲 | 説明 |
-|------|-----------|------|------|
-| ノーツ速度 | 400px/s | 200〜800（スライダー） | ノーツの落下速度 |
-| 判定オフセット | 0ms | -100〜+100（スライダー） | 音ズレ補正 |
-| 自動プレイ | OFF | ON/OFF | デバッグ用 |
-| BGM音量 | 80% | 0〜100%（スライダー） | 音楽の音量 |
-| SE音量 | 80% | 0〜100%（スライダー） | 効果音の音量 |
+| 項目 | キー | デフォルト | 範囲 | 説明 |
+|------|-----|-----------|------|------|
+| ノーツ速度 | `noteSpeed` | 400px/s | 200〜800（スライダー） | ノーツの落下速度 |
+| 判定オフセット | `judgeOffset` | 0ms | -100〜+100（スライダー） | 入力反応補正（人間側）。CALIBRATE ボタンで自動計測可 |
+| 音オフセット | `audioOffset` | 0ms | -200〜+200（スライダー） | ハードウェア音遅延補正。CALIBRATE ボタンでメトロノームを使い手動調整 |
+| 自動プレイ | `autoPlay` | OFF | ON/OFF | デバッグ用。スコアはランキング非対象 |
+| BGM音量 | `bgmVolume` | 100% | 0〜100%（スライダー） | 音楽の音量 |
+| SE音量 | `seVolume` | 35% | 0〜100%（スライダー） | 効果音の音量 |
+| ゲームSE | `gameSeEnabled` | ON | ON/OFF | ゲーム中の判定SE / 歓声 / 落胆 / ブーイングを一括ミュート |
+| 曲ソート | `songSortMode` | `addedDesc` | NEWEST/OLDEST/RECENT/MOST PLAYED/TITLE A→Z | 曲選択画面の並び順 |
 
 設定はlocalStorageに保存し、次回起動時に復元する。
+- 設定キー: `'neonbeat.settings.v2'`
+- 曲統計キー（v1.1.0新規）: `'neonbeat.songstats.v1'` — 各曲の `{ lastPlayed, playCount, scores[] }`
 
 ---
 

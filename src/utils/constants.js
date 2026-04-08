@@ -42,23 +42,38 @@ export const DIFFICULTY_COLORS = {
 // ===== Disco Level =====
 export const DISCO_LEVEL_THRESHOLDS = [0, 5, 15, 25, 40];
 
+// ===== Song Sort =====
+export const SONG_SORT_MODES = ['addedDesc', 'addedAsc', 'recent', 'playCount', 'title'];
+export const SONG_SORT_LABELS = {
+  addedDesc: 'NEWEST',
+  addedAsc: 'OLDEST',
+  recent: 'RECENT',
+  playCount: 'MOST PLAYED',
+  title: 'TITLE A→Z',
+};
+
 // ===== Settings =====
 export const DEFAULT_SETTINGS = {
   noteSpeed: 400, // px/sec
-  judgeOffset: 0, // ms
+  judgeOffset: 0, // ms — input/judgment lag (player reaction)
+  audioOffset: 0, // ms — audio output lag relative to video
   bgmVolume: 1.0,
   seVolume: 0.35,
   autoPlay: false,
+  songSortMode: 'addedDesc',
+  gameSeEnabled: true,
 };
 
 export const SETTINGS_RANGE = {
   noteSpeed: { min: 200, max: 800, step: 10 },
   judgeOffset: { min: -100, max: 100, step: 1 },
+  audioOffset: { min: -200, max: 200, step: 1 },
   bgmVolume: { min: 0, max: 1, step: 0.01 },
   seVolume: { min: 0, max: 1, step: 0.01 },
 };
 
 export const SETTINGS_STORAGE_KEY = 'neonbeat.settings.v2';
+export const SONG_STATS_STORAGE_KEY = 'neonbeat.songstats.v1';
 
 // ===== Audio / Visual =====
 export const SPECTRUM_BANDS = 40;
